@@ -22,13 +22,16 @@ This project demonstrates: async Rust web servers, JSON APIs, a dynamic single-f
 ## Install & Run
 
 1. Install Rust (if needed):
+
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 rustc --version
 cargo --version
 ```
+
 2. Run the app:
+
 ```bash
 git clone git@github.com:wachira567/ai_capstone_rust.git
 cd ai_capstone_rust
@@ -50,6 +53,7 @@ cargo run
 ## Testing (quick)
 
 Run these commands while the server is running:
+
 ```bash
 curl -i http://127.0.0.1:3000/       # HTML homepage
 curl -sS 'http://127.0.0.1:3000/api/mood?mood=happy' | jq
@@ -64,4 +68,3 @@ curl -sS http://127.0.0.1:3000/api/surprise | jq
 - Interactive, 'wow' features (confetti, easter egg)
 
 ---
-

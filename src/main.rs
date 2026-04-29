@@ -98,7 +98,16 @@ async fn main() {
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <div class="app">
+                <svg style="position:fixed;inset:0;pointer-events:none;opacity:.06" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                                <linearGradient id="g1" x1="0%" x2="100%" y1="0%" y2="100%">
+                                        <stop offset="0%" stop-color="#6ee7b7" />
+                                        <stop offset="100%" stop-color="#60a5fa" />
+                                </linearGradient>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#g1)" transform="rotate(-12 0 0)" />
+                </svg>
+                <div class="app">
         <h1>Mood Mosaic</h1>
         <p class="lead">Pick a mood and get a personalized micro-experience.</p>
                 <div class="grid">

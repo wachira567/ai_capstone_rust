@@ -1,4 +1,4 @@
-use rand::{seq::SliceRandom, Rng};
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use warp::Filter;
 
@@ -141,4 +141,37 @@ async fn main() {
         println!("Mood Mosaic running at http://127.0.0.1:{}", addr.1);
 
         warp::serve(routes).run(addr).await;
+}
+
+#[cfg(test)]
+mod tests {
+        use super::*;
+        use serde_json::to_value;
+
+        #[test]
+        fn test_mood_data_known() {
+                let m = mood_data_for("happy");
+                assert_eq!(m.mood, "happy");
+                assert!(m.message.contains("shining") || m.tip.len() > 0);
+
+                let c = mood_data_for("curious");
+                assert_eq!(c.mood, "curious");
+
+                let s = mood_data_for("stressed");
+                assert_eq!(s.mood, "stressed");
+        }
+
+        #[test]
+        fn test_mood_data_default() {
+                let d = mood_data_for("unknown-mood");
+                assert_eq!(d.mood, "calm");
+        }
+
+        #[test]
+        fn test_mood_response_serializes() {
+                let resp = mood_data_for("happy");
+                let v = to_value(&resp).expect("serialize");
+                assert!(v.get("message").is_some());
+                assert!(v.get("tip").is_some());
+        }
 }

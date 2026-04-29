@@ -4,6 +4,19 @@ This journal documents all AI prompts used, curriculum links, responses, and ref
 
 ---
 
+## 6. Mood Mosaic Design & Implementation
+
+**Prompt:**
+"Design an original, interactive Rust web app that demonstrates async Warp servers and a polished frontend. Include ideas for 'wow' features."
+
+**AI Response Summary:**
+The AI proposed "Mood Mosaic": a mood-driven micro-experience web app with mood tiles, personalized messages, visual confetti, a surprise endpoint, and a small inline frontend to keep the project self-contained.
+
+**Reflection:**
+Implemented the app as `src/main.rs`. Added unit tests, CI workflow, and README updates. Committed changes incrementally with meaningful messages.
+
+---
+
 ## 1. Project Planning & Technology Selection
 
 **Prompt:**

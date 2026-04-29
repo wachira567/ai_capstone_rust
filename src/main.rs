@@ -7,7 +7,7 @@ struct MoodQuery {
         mood: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct MoodResponse {
         mood: String,
         message: String,

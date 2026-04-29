@@ -1,0 +1,8 @@
+target/
+.cargo/
+.rustup/
+**/*.rs.bk
+node_modules/
+.env
+/*.log
+coverage/

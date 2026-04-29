@@ -44,6 +44,35 @@ fn mood_data_for(mood: &str) -> MoodResponse {
         }
 }
 
+// Persistence for user-submitted moods. Stored as an array in `data/custom_moods.json`.
+fn custom_moods_path() -> std::path::PathBuf {
+        let mut p = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+        p.push("data");
+        p.push("custom_moods.json");
+        p
+}
+
+fn load_custom_moods() -> Vec<MoodResponse> {
+        let path = custom_moods_path();
+        if !path.exists() {
+                return vec![];
+        }
+        let s = std::fs::read_to_string(&path).unwrap_or_default();
+        serde_json::from_str(&s).unwrap_or_else(|_| vec![])
+}
+
+fn save_custom_mood(m: &MoodResponse) -> std::io::Result<()> {
+        let path = custom_moods_path();
+        if let Some(dir) = path.parent() {
+                std::fs::create_dir_all(dir)?;
+        }
+        let mut v = load_custom_moods();
+        v.push(m.clone());
+        let out = serde_json::to_string_pretty(&v)?;
+        std::fs::write(path, out)?;
+        Ok(())
+}
+
 #[tokio::main]
 async fn main() {
         // Root HTML — small interactive frontend
@@ -72,16 +101,29 @@ async fn main() {
     <div class="app">
         <h1>Mood Mosaic</h1>
         <p class="lead">Pick a mood and get a personalized micro-experience.</p>
-        <div class="grid">
-            <div class="mood" data-mood="happy">😊 Happy</div>
-            <div class="mood" data-mood="curious">🤔 Curious</div>
-            <div class="mood" data-mood="stressed">😣 Stressed</div>
-            <div class="mood" data-mood="calm">😌 Calm</div>
-        </div>
-        <div id="result"></div>
+                <div class="grid">
+                        <div class="mood" data-mood="happy">😊 Happy</div>
+                        <div class="mood" data-mood="excited">🤩 Excited</div>
+                        <div class="mood" data-mood="curious">🤔 Curious</div>
+                        <div class="mood" data-mood="thoughtful">🧐 Thoughtful</div>
+                        <div class="mood" data-mood="stressed">😣 Stressed</div>
+                        <div class="mood" data-mood="grateful">🙏 Grateful</div>
+                        <div class="mood" data-mood="calm">😌 Calm</div>
+                </div>
+                <div id="result"></div>
+
+                <hr style="margin-top:2rem;opacity:.08" />
+                <h3 style="text-align:center">Submit a custom mood</h3>
+                <form id="customForm" style="max-width:640px;margin:0 auto;display:grid;gap:.6rem;margin-top:.6rem">
+                        <input name="mood" placeholder="Mood key (e.g. 'serene')" required style="padding:.6rem;border-radius:8px;border:none;background:#071826;color:#fff" />
+                        <input name="color" placeholder="Accent color (hex)" style="padding:.6rem;border-radius:8px;border:none;background:#071826;color:#fff" />
+                        <input name="message" placeholder="Short message" required style="padding:.6rem;border-radius:8px;border:none;background:#071826;color:#fff" />
+                        <input name="tip" placeholder="Quick tip (optional)" style="padding:.6rem;border-radius:8px;border:none;background:#071826;color:#fff" />
+                        <div style="text-align:center"><button type="submit" style="padding:.6rem 1rem;border-radius:10px;border:none;background:#60a5fa;color:#071029;cursor:pointer">Save Custom Mood</button></div>
+                </form>
     </div>
 
-    <script>
+        <script>
         async function pick(mood){
             const res = await fetch('/api/mood?mood='+encodeURIComponent(mood));
             const j = await res.json();
@@ -98,6 +140,31 @@ async fn main() {
         }
 
         document.querySelectorAll('.mood').forEach(el=>el.addEventListener('click',()=>pick(el.dataset.mood)));
+
+                // Custom mood submission
+                async function submitCustom(e){
+                        e.preventDefault();
+                        const form = document.getElementById('customForm');
+                        const data = {
+                                mood: form.mood.value,
+                                message: form.message.value,
+                                color: form.color.value || '#8b5cf6',
+                                tip: form.tip.value || ''
+                        };
+                        const res = await fetch('/api/custom', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});
+                        if(res.ok){
+                                alert('Saved custom mood!');
+                                form.reset();
+                        } else {
+                                alert('Failed to save');
+                        }
+                }
+
+                // Wire form
+                document.addEventListener('DOMContentLoaded', ()=>{
+                        const f = document.getElementById('customForm');
+                        if(f) f.addEventListener('submit', submitCustom);
+                });
 
         // easter egg: press 'm' to get a surprise
         window.addEventListener('keydown', async (e)=>{
@@ -123,8 +190,8 @@ async fn main() {
                         warp::reply::json(&resp)
                 });
 
-        // Surprise endpoint
-        let api_surprise = warp::path!("api" / "surprise").map(|| {
+                // Surprise endpoint
+                let api_surprise = warp::path!("api" / "surprise").map(|| {
                 let choices = vec![
                         ("Secret Mosaic", "You found the secret mood mosaic — keep exploring!"),
                         ("Tiny Challenge", "Do 10 jumping jacks and celebrate small wins."),
@@ -135,7 +202,25 @@ async fn main() {
                 warp::reply::json(&serde_json::json!({"title": title, "body": body}))
         });
 
-        let routes = index.or(api_mood).or(api_surprise);
+                // Custom moods endpoints: POST to add, GET to list
+                let api_custom_post = warp::path!("api" / "custom")
+                        .and(warp::post())
+                        .and(warp::body::json())
+                        .map(|incoming: MoodResponse| {
+                                match save_custom_mood(&incoming) {
+                                        Ok(_) => warp::reply::with_status(warp::reply::json(&serde_json::json!({"ok":true})), warp::http::StatusCode::CREATED),
+                                        Err(e) => warp::reply::with_status(warp::reply::json(&serde_json::json!({"ok":false, "error": format!("{}", e)})), warp::http::StatusCode::INTERNAL_SERVER_ERROR),
+                                }
+                        });
+
+                let api_custom_get = warp::path!("api" / "custom")
+                        .and(warp::get())
+                        .map(|| {
+                                let list = load_custom_moods();
+                                warp::reply::json(&list)
+                        });
+
+        let routes = index.or(api_mood).or(api_surprise).or(api_custom_post).or(api_custom_get);
 
         let addr = ([127, 0, 0, 1], 3000);
         println!("Mood Mosaic running at http://127.0.0.1:{}", addr.1);
